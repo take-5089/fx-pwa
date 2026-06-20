@@ -2,22 +2,21 @@ document.getElementById("predictBtn").addEventListener("click", predict);
 
 async function predict() {
   const apiKey = "3VJ56RZG35XVKFQI";
-  const url = `https://www.alphavantage.co/query?function=FX_INTRADAY&from_symbol=EUR&to_symbol=USD&interval=60min&apikey=${apiKey}`;
+  const url = `https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=EUR&to_symbol=USD&apikey=${apiKey}`;
 
   const res = await fetch(url);
   const data = await res.json();
 
   console.log("APIレスポンス:", data);
 
-  // ★ ここが重要：Time Series が無い場合は画面に表示して終了
-  if (!data["Time Series FX (60min)"]) {
+  if (!data["Time Series FX (Daily)"]) {
     document.getElementById("result").innerText =
       "APIエラー：データが取得できませんでした。\n\n" +
       JSON.stringify(data, null, 2);
     return;
   }
 
-  const timeSeries = data["Time Series FX (60min)"];
+  const timeSeries = data["Time Series FX (Daily)"];
   const closes = Object.values(timeSeries).map(v => parseFloat(v["4. close"]));
 
   const sma5 = sma(closes, 5);
