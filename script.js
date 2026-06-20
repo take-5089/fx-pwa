@@ -9,10 +9,10 @@ async function predict() {
 
   console.log("APIレスポンス:", data);
 
-  // エラー時の表示
+  // ★ ここが重要：Time Series が無い場合は画面に表示して終了
   if (!data["Time Series FX (60min)"]) {
     document.getElementById("result").innerText =
-      "APIエラー：データが取得できませんでした。\n" +
+      "APIエラー：データが取得できませんでした。\n\n" +
       JSON.stringify(data, null, 2);
     return;
   }
