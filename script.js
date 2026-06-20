@@ -1,7 +1,7 @@
 document.getElementById("predictBtn").addEventListener("click", predict);
 
 async function predict() {
-  const apiKey = "3VJ56RZG35XVKFQI"; // ← あなたの本物のAPIキー
+  const apiKey = "3VJ56RZG35XVKFQI"; // ← あなたのAPIキー
   const from = "EUR";
   const to = "USD";
   const symbol = "EURUSD";
@@ -10,7 +10,6 @@ async function predict() {
   resultEl.innerText = "判定中…";
 
   try {
-    // --- API呼び出し ---
     const dailyUrl = `https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=${from}&to_symbol=${to}&apikey=${apiKey}`;
     const weeklyUrl = `https://www.alphavantage.co/query?function=FX_WEEKLY&from_symbol=${from}&to_symbol=${to}&apikey=${apiKey}`;
     const adxUrl = `https://www.alphavantage.co/query?function=ADX&symbol=${symbol}&interval=daily&time_period=14&series_type=close&apikey=${apiKey}`;
@@ -54,7 +53,7 @@ async function predict() {
       dailyClose > dailyOpen ? "UP" :
       dailyClose < dailyOpen ? "DOWN" : "FLAT";
 
-    // --- 週足データ（返らない場合は null） ---
+    // --- 週足データ（返らなければ null） ---
     let weeklyTrend = null;
     if (weeklyData["Time Series FX (Weekly)"]) {
       const weeklyTS = weeklyData["Time Series FX (Weekly)"];
@@ -69,7 +68,7 @@ async function predict() {
         weeklySma5 < weeklySma20 ? "DOWN" : "FLAT";
     }
 
-    // --- ADX（返らない場合は null） ---
+    // --- ADX（返らなければ null） ---
     let adxVal = null;
     if (adxData["Technical Analysis: ADX"]) {
       const adxTS = adxData["Technical Analysis: ADX"];
@@ -81,7 +80,6 @@ async function predict() {
     let signal = "NO TRADE";
     let reason = [];
 
-    // 基本（日足）判定
     if (dailyTrend === "UP" && candleDir === "UP") {
       signal = "BUY";
       reason.push("日足が上昇トレンドかつ陽線");
@@ -92,7 +90,6 @@ async function predict() {
       reason.push("日足条件が揃っていない");
     }
 
-    // 週足が返ってきた場合のみ精度UP
     if (weeklyTrend) {
       if (signal === "BUY" && weeklyTrend !== "UP") {
         signal = "NO TRADE";
@@ -106,11 +103,10 @@ async function predict() {
       reason.push("週足データなし → スキップ");
     }
 
-    // ADXが返ってきた場合のみ精度UP
     if (adxVal !== null) {
       if (adxVal <= 20) {
         signal = "NO TRADE";
-        reason.push("ADX<=20 → トレンド弱いため除外");
+        reason.push("ADX<=20 → トレンド弱い");
       } else {
         reason.push("ADX>20 → トレンド強い");
       }
@@ -118,9 +114,30 @@ async function predict() {
       reason.push("ADXデータなし → スキップ");
     }
 
+    // --- 4時間後方向性スコア ---
+    let score = 0;
+
+    // 日足トレンドとローソク足が一致 → +40
+    if (dailyTrend === candleDir && dailyTrend !== "FLAT") score += 40;
+
+    // ローソク足が陽線/陰線 → +30
+    if (candleDir !== "FLAT") score += 30;
+
+    // 週足一致 → +20
+    if (weeklyTrend && weeklyTrend === dailyTrend) score += 20;
+
+    // ADX>20 → +10
+    if (adxVal !== null && adxVal > 20) score += 10;
+
+    let scoreText = "";
+    if (signal === "BUY") scoreText = `BUY優位性: ${score}%`;
+    else if (signal === "SELL") scoreText = `SELL優位性: ${score}%`;
+    else scoreText = `方向性スコア: ${score}%`;
+
     // --- 表示 ---
     resultEl.innerText =
       `【最終判定】\n${signal}\n\n` +
+      `【4時間後方向性スコア】\n${scoreText}\n\n` +
       `【日足】\nSMA5: ${dailySma5.toFixed(5)}\nSMA20: ${dailySma20.toFixed(5)}\nトレンド: ${dailyTrend}\nローソク足: ${candleDir}\n\n` +
       `【週足】\n${weeklyTrend ?? "データなし"}\n\n` +
       `【ADX】\n${adxVal !== null ? adxVal.toFixed(2) : "データなし"}\n\n` +
