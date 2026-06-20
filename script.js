@@ -29,7 +29,7 @@ async function predict() {
     console.log("FX_WEEKLY:", weeklyData);
     console.log("ADX:", adxData);
 
-    // --- 日足データ ---
+    // --- 日足データ（必須） ---
     const dailyTS = dailyData["Time Series FX (Daily)"];
     if (!dailyTS) {
       resultEl.innerText = "日足データが取得できませんでした。";
