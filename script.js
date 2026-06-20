@@ -35,8 +35,9 @@ async function predict() {
       return;
     }
 
+    // ★ 土日対応：最新の日付を強制的に取得
     const dailyDates = Object.keys(dailyTS).sort((a, b) => new Date(b) - new Date(a));
-    const latestDaily = dailyTS[dailyDates[0]];
+    const latestDaily = dailyTS[dailyDates[0]]; // ← 金曜 or 木曜でもOK
 
     const dailyOpen = parseFloat(latestDaily["1. open"]);
     const dailyClose = parseFloat(latestDaily["4. close"]);
@@ -117,16 +118,9 @@ async function predict() {
     // --- 4時間後方向性スコア ---
     let score = 0;
 
-    // 日足トレンドとローソク足が一致 → +40
     if (dailyTrend === candleDir && dailyTrend !== "FLAT") score += 40;
-
-    // ローソク足が陽線/陰線 → +30
     if (candleDir !== "FLAT") score += 30;
-
-    // 週足一致 → +20
     if (weeklyTrend && weeklyTrend === dailyTrend) score += 20;
-
-    // ADX>20 → +10
     if (adxVal !== null && adxVal > 20) score += 10;
 
     let scoreText = "";
